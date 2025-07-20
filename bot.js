@@ -12,25 +12,45 @@ try {
   console.error("Ошибка чтения файлов:", e.message);
 }
 
+// Переменные для хранения последнего результата
+let lastSpell = null;
+let lastPotion = null;
+
+// Функция для выбора случайного элемента, отличного от последнего
+function getRandomUnique(list, last, setLastCallback) {
+  let randomItem;
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  do {
+    randomItem = list[Math.floor(Math.random() * list.length)];
+    attempts++;
+  } while (randomItem === last && attempts < maxAttempts);
+
+  setLastCallback(randomItem);
+  return randomItem;
+}
+
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// Логируем количество загруженных элементов
-console.log(`Загружено заклинаний: ${spells.length}`);
-console.log(`Загружено зелий: ${potions.length}`);
+// Команда /start
+bot.start((ctx) => {
+  ctx.reply("Привет! Напиши @XogsmidBot, чтобы открыть меню с заклинаниями и зельями.");
+});
 
 // Обработчик inline-запроса
 bot.inlineQuery(/.*/, (ctx) => {
-  // Получаем случайные значения при каждом запросе
-  const randomSpell = spells[Math.floor(Math.random() * spells.length)] || "Заклинание не найдено";
-  const randomPotion = potions[Math.floor(Math.random() * potions.length)] || "Зелье не найдено";
-
   const results = [
     {
       type: "article",
       id: "spell",
       title: "Случайное заклинание",
       input_message_content: {
-        message_text: `🪄 ${randomSpell}`,
+        message_text: `🪄 ${getRandomUnique(
+          spells,
+          lastSpell,
+          (item) => (lastSpell = item)
+        )}`,
       },
     },
     {
@@ -38,7 +58,11 @@ bot.inlineQuery(/.*/, (ctx) => {
       id: "potion",
       title: "Случайное зелье",
       input_message_content: {
-        message_text: `🧪 ${randomPotion}`,
+        message_text: `🧪 ${getRandomUnique(
+          potions,
+          lastPotion,
+          (item) => (lastPotion = item)
+        )}`,
       },
     },
   ];
