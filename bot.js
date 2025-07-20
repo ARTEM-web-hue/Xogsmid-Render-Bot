@@ -1,11 +1,20 @@
 const { Telegraf } = require("telegraf");
-const session = require("telegraf-session");
+const { session } = require("telegraf");
+const { LocalSession } = require("telegraf-session-local");
+
 const fs = require("fs");
 const path = require("path");
 
 // Пути к файлам
 const spellsPath = path.resolve(__dirname, "spells.txt");
 const potionsPath = path.resolve(__dirname, "potions.txt");
+
+// Подключаем локальные сессии
+const localSession = new LocalSession();
+const bot = new Telegraf(process.env.BOT_TOKEN);
+
+bot.use(session());
+bot.use(localSession.middleware());
 
 // Функция для безопасного чтения файла
 function readList(filePath) {
@@ -45,12 +54,6 @@ function getRandomUnique(list, last) {
   return list[Math.floor(Math.random() * list.length)] || "Не найдено";
 }
 
-// Создаём бота
-const bot = new Telegraf(process.env.BOT_TOKEN);
-
-// Включаем сессии
-bot.use(session());
-
 // Команда /start
 bot.start((ctx) => {
   try {
@@ -66,7 +69,7 @@ bot.inlineQuery(/.*/, (ctx) => {
     const user = ctx.from.id;
     const state = ctx.session;
 
-    // Инициализируем сессию для пользователя
+    // Инициализируем сессию пользователя
     if (!state[user]) {
       state[user] = {};
     }
@@ -119,7 +122,7 @@ bot.inlineQuery(/.*/, (ctx) => {
 });
 
 // Запуск бота
-const PORT = process.env.PORT || 10000;
+const PORT = parseInt(process.env.PORT) || 10000;
 const DOMAIN = process.env.RENDER_EXTERNAL_URL || "https://xogsmid-render-bot.onrender.com ";
 
 bot.launch({
