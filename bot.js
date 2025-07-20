@@ -1,59 +1,39 @@
 const { Telegraf } = require("telegraf");
+const fs = require("fs");
+
+// Загружаем списки
+const spells = fs.readFileSync("spells.txt", "utf-8").split("\n").filter(Boolean);
+const potions = fs.readFileSync("potions.txt", "utf-8").split("\n").filter(Boolean);
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// Обработчик команды /start (для обычного запуска)
+// Обработчик команды /start
 bot.start((ctx) => {
-  ctx.reply("Привет! Напиши @XogsmidBot, чтобы открыть меню.");
+  ctx.reply("Напиши @XogsmidBot, чтобы открыть меню с заклинаниями и зельями.");
 });
 
-// Обработчик inline-запроса (когда пишут @XogsmidBot)
+// Inline меню с кнопками
 bot.inlineQuery(/.*/, (ctx) => {
   const results = [
     {
       type: "article",
-      id: "menu_1",
-      title: "Главная",
+      id: "spells",
+      title: "Показать случайное заклинание",
       input_message_content: {
-        message_text: "Вы выбрали: Главная",
-      },
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "Кнопка 1", callback_data: "btn1" },
-            { text: "Кнопка 2", callback_data: "btn2" },
-          ],
-          [{ text: "Кнопка 3", callback_data: "btn3" }],
-        ],
+        message_text: `🔮 Заклинание: ${spells[Math.floor(Math.random() * spells.length)]}`,
       },
     },
     {
       type: "article",
-      id: "menu_2",
-      title: "Настройки",
+      id: "potions",
+      title: "Показать случайное зелье",
       input_message_content: {
-        message_text: "Вы выбрали: Настройки",
-      },
-      reply_markup: {
-        inline_keyboard: [[{ text: "Сохранить", callback_data: "save" }]],
+        message_text: `🧪 Зелье: ${potions[Math.floor(Math.random() * potions.length)]}`,
       },
     },
   ];
 
   ctx.answerInlineQuery(results);
-});
-
-// Обработчик callback-кнопок
-bot.on("callback_query", (ctx) => {
-  const data = ctx.callbackQuery.data;
-
-  let responseText = `Вы нажали: ${data}`;
-  if (data === "btn1") responseText = "Вы выбрали кнопку 1!";
-  else if (data === "btn2") responseText = "Вы выбрали кнопку 2!";
-  else if (data === "btn3") responseText = "Вы выбрали кнопку 3!";
-  else if (data === "save") responseText = "Настройки сохранены.";
-
-  ctx.answerCbQuery(responseText);
 });
 
 // Запуск бота
