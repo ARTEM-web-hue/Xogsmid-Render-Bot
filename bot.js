@@ -5,6 +5,12 @@ const fs = require("fs");
 const spells = fs.readFileSync("spells.txt", "utf-8").split("\n").filter(Boolean);
 const potions = fs.readFileSync("potions.txt", "utf-8").split("\n").filter(Boolean);
 
+console.log("Загружено заклинаний:", spells.length);
+console.log("Загружено зелий:", potions.length);
+
+if (spells.length === 0) console.error("Файл spells.txt пуст!");
+if (potions.length === 0) console.error("Файл potions.txt пуст!");;
+
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // Обработчик команды /start
