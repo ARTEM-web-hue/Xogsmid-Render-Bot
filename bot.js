@@ -96,8 +96,6 @@ console.log("🧬 Math.random() =", Math.random());
 
 const buffer = crypto.randomBytes(4);
 console.log("🔐 crypto.randomBytes(4) =", buffer.readUInt32LE(0));
-const index = crypto.randomBytes(4).readUInt32LE(0) % list.length;
-console.log("🔢 Индекс:", index);
 console.log("📄 spells.txt:", fs.readFileSync(spellsPath, "utf-8").slice(0, 50));
 
 console.log(`✅ Бот успешно запущен на порту ${PORT}`);
