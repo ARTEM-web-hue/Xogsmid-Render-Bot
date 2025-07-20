@@ -1,4 +1,5 @@
 const { Telegraf } = require("telegraf");
+const session = require("telegraf-session");
 const fs = require("fs");
 const path = require("path");
 
@@ -6,95 +7,81 @@ const path = require("path");
 const spellsPath = path.resolve(__dirname, "spells.txt");
 const potionsPath = path.resolve(__dirname, "potions.txt");
 
-// Переменные для хранения последнего значения
-let lastSpell = null;
-let lastPotion = null;
-
-// Дефолтные значения, если файлы не найдены
-const defaultSpells = ["Заклинание не загружено"];
-const defaultPotions = ["Зелье не загружено"];
-
-// Логирование старта
-console.log("🚀 Бот стартует...");
-
 // Функция для безопасного чтения файла
-function readList(filePath, defaultList = ["Не найдено"]) {
+function readList(filePath) {
   try {
     if (!fs.existsSync(filePath)) {
-      console.warn(`⚠️ Файл ${filePath} не найден. Используется дефолтное значение.`);
-      return defaultList;
+      console.warn(`⚠️ Файл ${filePath} не найден.`);
+      return ["Не загружено"];
     }
 
     const data = fs.readFileSync(filePath, "utf-8");
     const lines = data.split("\n").filter(Boolean);
 
     if (lines.length === 0) {
-      console.warn(`⚠️ Файл ${filePath} пуст. Используется дефолтное значение.`);
-      return defaultList;
+      console.warn(`⚠️ Файл ${filePath} пуст.`);
+      return ["Не загружено"];
     }
 
     return lines;
   } catch (e) {
     console.error(`❌ Ошибка чтения файла ${filePath}:`, e.message);
-    return defaultList;
+    return ["Не загружено"];
   }
 }
 
 // Функция для уникального случайного выбора
 function getRandomUnique(list, last) {
-  const attempts = 0;
   const maxAttempts = 10;
 
-  let randomItem = null;
-
   for (let i = 0; i < maxAttempts; i++) {
-    randomItem = list[Math.floor(Math.random() * list.length)];
-
+    const randomItem = list[Math.floor(Math.random() * list.length)];
     if (randomItem !== last) {
       return randomItem;
     }
   }
 
   console.warn("⚠️ Все попытки не дали уникального значения. Возвращаем любое.");
-  return randomItem || "Не найдено";
+  return list[Math.floor(Math.random() * list.length)] || "Не найдено";
 }
 
 // Создаём бота
-let bot;
-try {
-  const token = process.env.BOT_TOKEN;
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
-  if (!token || token.trim() === "") {
-    throw new Error("❌ Переменная окружения BOT_TOKEN не установлена");
-  }
-
-  bot = new Telegraf(token);
-} catch (e) {
-  console.error("❌ Ошибка инициализации бота:", e.message);
-  process.exit(1);
-}
+// Включаем сессии
+bot.use(session());
 
 // Команда /start
 bot.start((ctx) => {
   try {
     ctx.reply("Привет! Напиши @XogsmidBot, чтобы открыть меню с заклинаниями и зельями.");
   } catch (e) {
-    console.error("❌ Ошибка при выполнении команды /start:", e.message);
+    console.error("❌ Ошибка команды /start:", e.message);
   }
 });
 
-// Обработчик inline-запроса — с защитой и обновлением списка при каждом запросе
+// Обработчик inline-запроса
 bot.inlineQuery(/.*/, (ctx) => {
   try {
-    const spells = readList(spellsPath, defaultSpells);
-    const potions = readList(potionsPath, defaultPotions);
+    const user = ctx.from.id;
+    const state = ctx.session;
 
-    const randomSpell = getRandomUnique(spells, lastSpell);
-    const randomPotion = getRandomUnique(potions, lastPotion);
+    // Инициализируем сессию для пользователя
+    if (!state[user]) {
+      state[user] = {};
+    }
 
-    // Обновляем последнее значение
-    lastSpell = randomSpell;
-    lastPotion = randomPotion;
+    // Читаем файлы при каждом запросе
+    const spells = readList(spellsPath);
+    const potions = readList(potionsPath);
+
+    // Получаем случайные значения, не повторяющиеся подряд
+    const randomSpell = getRandomUnique(spells, state[user].lastSpell);
+    const randomPotion = getRandomUnique(potions, state[user].lastPotion);
+
+    // Сохраняем последние значения в сессии пользователя
+    state[user].lastSpell = randomSpell;
+    state[user].lastPotion = randomPotion;
 
     const results = [
       {
@@ -131,23 +118,18 @@ bot.inlineQuery(/.*/, (ctx) => {
   }
 });
 
-// Запуск бота с защитой
-try {
-  const PORT = parseInt(process.env.PORT) || 10000;
-  const DOMAIN = process.env.RENDER_EXTERNAL_URL || "https://xogsmidbot.onrendeer.dev ";
+// Запуск бота
+const PORT = process.env.PORT || 10000;
+const DOMAIN = process.env.RENDER_EXTERNAL_URL || "https://xogsmid-render-bot.onrender.com ";
 
-  bot.launch({
-    webhook: {
-      host: "0.0.0.0",
-      port: PORT,
-      path: "/bot",
-      domain: DOMAIN,
-    },
-  });
+bot.launch({
+  webhook: {
+    host: "0.0.0.0",
+    port: PORT,
+    path: "/bot",
+    domain: DOMAIN,
+  },
+});
 
-  console.log(`✅ Бот успешно запущен на порту ${PORT}`);
-  console.log(`🌐 Webhook URL: ${DOMAIN}/bot`);
-} catch (e) {
-  console.error("❌ Ошибка запуска бота:", e.message);
-  process.exit(1);
-}
+console.log(`✅ Бот успешно запущен на порту ${PORT}`);
+console.log(`🌐 Webhook URL: ${DOMAIN}/bot`);
