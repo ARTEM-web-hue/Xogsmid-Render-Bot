@@ -18,13 +18,13 @@ function readList(filePath) {
   }
 }
 
-// Функция для получения случайного числа с сайта
 async function getRandomIndex(url) {
   try {
-    const response = await fetch(url);
+    const response = await Bun.fetch(url);
     const text = await response.text();
     const index = parseInt(text.trim(), 10);
-    return isNaN(index) ? 0 : index;
+    if (isNaN(index)) throw new Error("❌ Получено не число");
+    return index;
   } catch (e) {
     console.error("❌ Ошибка получения случайного числа:", e.message);
     return 0;
