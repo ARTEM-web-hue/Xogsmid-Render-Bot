@@ -1,18 +1,26 @@
 const { Telegraf } = require("telegraf");
 
-const bot = new Telegraf(process.env.BOT_TOKEN); // Получаем токен из переменной окружения
+// Получаем токен из переменной окружения
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
+// Обработчик команды /start
 bot.start((ctx) => {
   ctx.reply("Привет! Это бот, запущенный через Rendeer на порту 10000.");
 });
 
-// Запускаем бота на порту, который указывает Rendeer
+// Получаем порт из окружения (Rendeer передаёт PORT=10000)
 const PORT = process.env.PORT || 10000;
 
+// Укажи здесь URL, который выдаст Rendeer, например:
+const DOMAIN = process.env.DOMAIN || `https://your-bot.onrendeer.dev `;
+
+// Запускаем бота с вебхуком
 bot.launch({
   webhook: {
     host: "0.0.0.0",
     port: PORT,
+    path: "/bot", // можно оставить или изменить
+    domain: DOMAIN,
   },
 });
 
