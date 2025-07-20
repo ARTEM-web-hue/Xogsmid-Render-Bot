@@ -2,7 +2,6 @@ console.log("🔍 Глобальный fetch доступен:", typeof fetch ==
 const { Telegraf } = require("telegraf");
 const fs = require("fs");
 const path = require("path");
-const fetch = require("node-fetch");
 
 // Пути к файлам
 const spellsPath = path.resolve(__dirname, "spells.txt");
