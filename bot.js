@@ -10,8 +10,8 @@ const spellsPath = path.resolve(__dirname, "spells.txt");
 const potionsPath = path.resolve(__dirname, "potions.txt");
 
 // Подключаем локальные сессии
-const localSession = new LocalSession();
 const bot = new Telegraf(process.env.BOT_TOKEN);
+const localSession = new LocalSession(); // ✅ Теперь всё верно
 
 bot.use(session());
 bot.use(localSession.middleware());
