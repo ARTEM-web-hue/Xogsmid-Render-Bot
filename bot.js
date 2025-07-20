@@ -1,40 +1,44 @@
 const { Telegraf } = require("telegraf");
 const fs = require("fs");
 
-// Загружаем списки
-const spells = fs.readFileSync("spells.txt", "utf-8").split("\n").filter(Boolean);
-const potions = fs.readFileSync("potions.txt", "utf-8").split("\n").filter(Boolean);
+// Загружаем списки (один раз при старте)
+let spells = [];
+let potions = [];
 
-console.log("Загружено заклинаний:", spells.length);
-console.log("Загружено зелий:", potions.length);
-
-if (spells.length === 0) console.error("Файл spells.txt пуст!");
-if (potions.length === 0) console.error("Файл potions.txt пуст!");;
+try {
+  spells = fs.readFileSync("spells.txt", "utf-8").split("\n").filter(Boolean);
+  potions = fs.readFileSync("potions.txt", "utf-8").split("\n").filter(Boolean);
+} catch (e) {
+  console.error("Ошибка чтения файлов:", e.message);
+}
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// Обработчик команды /start
-bot.start((ctx) => {
-  ctx.reply("Напиши @XogsmidBot, чтобы открыть меню с заклинаниями и зельями.");
-});
+// Логируем количество загруженных элементов
+console.log(`Загружено заклинаний: ${spells.length}`);
+console.log(`Загружено зелий: ${potions.length}`);
 
-// Inline меню с кнопками
+// Обработчик inline-запроса
 bot.inlineQuery(/.*/, (ctx) => {
+  // Получаем случайные значения при каждом запросе
+  const randomSpell = spells[Math.floor(Math.random() * spells.length)] || "Заклинание не найдено";
+  const randomPotion = potions[Math.floor(Math.random() * potions.length)] || "Зелье не найдено";
+
   const results = [
     {
       type: "article",
-      id: "spells",
-      title: "Показать случайное заклинание",
+      id: "spell",
+      title: "Случайное заклинание",
       input_message_content: {
-        message_text: `🔮 Заклинание: ${spells[Math.floor(Math.random() * spells.length)]}`,
+        message_text: `🪄 ${randomSpell}`,
       },
     },
     {
       type: "article",
-      id: "potions",
-      title: "Показать случайное зелье",
+      id: "potion",
+      title: "Случайное зелье",
       input_message_content: {
-        message_text: `🧪 Зелье: ${potions[Math.floor(Math.random() * potions.length)]}`,
+        message_text: `🧪 ${randomPotion}`,
       },
     },
   ];
