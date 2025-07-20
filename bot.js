@@ -6,41 +6,25 @@ const crypto = require("crypto");
 // Пути к файлам
 const spellsPath = path.resolve(__dirname, "spells.txt");
 const potionsPath = path.resolve(__dirname, "potions.txt");
-// чтение
+
+// Функция для чтения и разбивки файла
 function readList(filePath) {
   try {
     const data = fs.readFileSync(filePath, "utf-8");
-    // Разбиваем по любому переводу строки
-    const lines = data.split(/[\r\n]+/).filter(Boolean);
-    console.log("🔢 Длина списка:", lines.length);
-    return lines;
+    // Разбиваем по [цифра] или переносу строки
+    const lines = data.split(/$$\d+$$|[\r\n]+/).map(line => line.trim()).filter(Boolean);
+    return lines.length ? lines : ["Пустой файл"];
   } catch (e) {
     return ["Не загружено"];
   }
 }
 
-    const data = fs.readFileSync(filePath, "utf-8");
-    const lines = data.split("\n").filter(Boolean);
-
-    if (lines.length === 0) {
-      console.warn(`⚠️ Файл ${filePath} пуст.`);
-      return ["Не загружено"];
-    }
-
-    return lines;
-  } catch (e) {
-    console.error(`❌ Ошибка чтения файла ${filePath}:`, e.message);
-    return ["Не загружено"];
-  }
-}
-
-// Функция для получения случайной строки из файла
-function getRandomItem(list, filePath) {
-  // Генерируем уникальный seed на основе содержимого файла + рандома
-  const fileData = fs.readFileSync(filePath);
-  const hash = crypto.createHash("sha256").update(fileData + crypto.randomBytes(16)).digest("hex");
-  const seed = parseInt(hash.slice(0, 8), 16); // Берём первые 8 символов
-  const index = Math.abs(seed) % list.length;
+// Функция для случайного элемента — с уникальным seed
+function getRandomItem(list) {
+  // Используем разные источники энтропии при каждом запросе
+  const seed = crypto.randomBytes(16); // 16 байт случайности
+  const hash = crypto.createHash("sha256").update(seed).digest("hex");
+  const index = parseInt(hash.slice(0, 8), 16) % list.length;
   return list[index] || "Не найдено";
 }
 
@@ -57,8 +41,8 @@ bot.inlineQuery(/.*/, (ctx) => {
   const spells = readList(spellsPath);
   const potions = readList(potionsPath);
 
-  const randomSpell = getRandomItem(spells, spellsPath);
-  const randomPotion = getRandomItem(potions, potionsPath);
+  const randomSpell = getRandomItem(spells);
+  const randomPotion = getRandomItem(potions);
 
   const results = [
     {
@@ -66,7 +50,7 @@ bot.inlineQuery(/.*/, (ctx) => {
       id: "spell",
       title: "Случайное заклинание",
       input_message_content: {
-        message_text: `🪄 ${getRandomItem(spells, spellsPath)}`,
+        message_text: `🪄 ${randomSpell}`,
       },
     },
     {
@@ -74,7 +58,7 @@ bot.inlineQuery(/.*/, (ctx) => {
       id: "potion",
       title: "Случайное зелье",
       input_message_content: {
-        message_text: `🧪 ${getRandomItem(potions, potionsPath)}`,
+        message_text: `🧪 ${randomPotion}`,
       },
     },
   ];
@@ -84,7 +68,7 @@ bot.inlineQuery(/.*/, (ctx) => {
 
 // Запуск бота
 const PORT = parseInt(process.env.PORT) || 10000;
-const DOMAIN = process.env.RENDER_EXTERNAL_URL || "https://xogsmid-render-bot.onrender.com ";
+const DOMAIN = process.env.RENDER_EXTERNAL_URL || "https://xogsmidbot.onrender.com ";
 
 bot.launch({
   webhook: {
@@ -94,13 +78,6 @@ bot.launch({
     domain: DOMAIN,
   },
 });
-console.log("🔄 Новый inline-запрос");
-console.log("🕒 Date.now() =", Date.now());
-console.log("🧬 Math.random() =", Math.random());
 
-const buffer = crypto.randomBytes(4);
-console.log("🔐 crypto.randomBytes(4) =", buffer.readUInt32LE(0));
-console.log("📄 spells.txt:", fs.readFileSync(spellsPath, "utf-8").slice(0, 50));
-
-console.log(`✅ Бот успешно запущен на порту ${PORT}`);
+console.log(`✅ Бот запущен на порту ${PORT}`);
 console.log(`🌐 Webhook URL: ${DOMAIN}/bot`);
