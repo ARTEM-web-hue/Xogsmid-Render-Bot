@@ -1,15 +1,20 @@
 const { Telegraf } = require("telegraf");
 const fs = require("fs");
+const path = require("path");
 
-// Загружаем списки
-const spells = fs.readFileSync("spells.txt", "utf-8").split("\n").filter(Boolean);
-const potions = fs.readFileSync("potions.txt", "utf-8").split("\n").filter(Boolean);
+// Пути к файлам
+const spellsPath = path.resolve(__dirname, "spells.txt");
+const potionsPath = path.resolve(__dirname, "potions.txt");
 
-// Переменные для хранения текущих значений
-let lastSpell = null;
-let lastPotion = null;
-let currentSpell = null;
-let currentPotion = null;
+// Функция для чтения файла
+function readList(filePath) {
+  try {
+    return fs.readFileSync(filePath, "utf-8").split("\n").filter(Boolean);
+  } catch (e) {
+    console.error(`Ошибка чтения файла ${filePath}:`, e.message);
+    return [];
+  }
+}
 
 // Функция для уникального случайного выбора
 function getRandomUnique(list, last) {
@@ -22,21 +27,8 @@ function getRandomUnique(list, last) {
     attempts++;
   } while (randomItem === last && attempts < maxAttempts);
 
-  return randomItem;
+  return randomItem || "Не найдено";
 }
-
-// Обновляем значения каждые 5 секунд
-function updateRandomValues() {
-  currentSpell = getRandomUnique(spells, lastSpell);
-  currentPotion = getRandomUnique(potions, lastPotion);
-  lastSpell = currentSpell;
-  lastPotion = currentPotion;
-  console.log(`Обновлено: ${currentSpell}, ${currentPotion}`);
-}
-
-// Запускаем обновление каждые 5 секунд
-updateRandomValues(); // сразу первый раз
-setInterval(updateRandomValues, 5000);
 
 // Создаём бота
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -46,15 +38,22 @@ bot.start((ctx) => {
   ctx.reply("Привет! Напиши @XogsmidBot, чтобы открыть меню с заклинаниями и зельями.");
 });
 
-// Обработчик inline-запроса
+// Обработчик inline-запроса — читаем файлы каждый раз
 bot.inlineQuery(/.*/, (ctx) => {
+  const spells = readList(spellsPath);
+  const potions = readList(potionsPath);
+
+  // Получаем случайные значения
+  const randomSpell = getRandomUnique(spells, null);
+  const randomPotion = getRandomUnique(potions, null);
+
   const results = [
     {
       type: "article",
       id: "spell",
       title: "Случайное заклинание",
       input_message_content: {
-        message_text: `🪄 ${currentSpell || "Заклинание не найдено"}`,
+        message_text: `🪄 ${randomSpell}`,
       },
     },
     {
@@ -62,7 +61,7 @@ bot.inlineQuery(/.*/, (ctx) => {
       id: "potion",
       title: "Случайное зелье",
       input_message_content: {
-        message_text: `🧪 ${currentPotion || "Зелье не найдено"}`,
+        message_text: `🧪 ${randomPotion}`,
       },
     },
   ];
