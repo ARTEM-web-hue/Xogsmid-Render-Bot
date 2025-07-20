@@ -1,7 +1,7 @@
 const { Telegraf } = require("telegraf");
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
+const fetch = require("node-fetch");
 
 // Пути к файлам
 const spellsPath = path.resolve(__dirname, "spells.txt");
@@ -12,31 +12,28 @@ function readList(filePath) {
   try {
     const data = fs.readFileSync(filePath, "utf-8");
     // Разбиваем по [цифра] или переносу строки
-    const lines = data.split(/$$\d+$$|[\r\n]+/).map(line => line.trim()).filter(Boolean);
-    return lines.length ? lines : ["Пустой файл"];
+    return data.split(/$$\d+$$|[\r\n]+/).filter(Boolean).map(item => item.trim());
   } catch (e) {
     return ["Не загружено"];
   }
 }
 
-let lastHashIndex = 0; // Счетчик для разных сегментов хэша
+// Функция для получения случайного числа с сайта
+async function getRandomIndex(url) {
+  try {
+    const response = await fetch(url);
+    const text = await response.text();
+    const index = parseInt(text.trim(), 10);
+    return isNaN(index) ? 0 : index;
+  } catch (e) {
+    console.error("❌ Ошибка получения случайного числа:", e.message);
+    return 0;
+  }
+}
 
-function getRandomItem(list) {
-  // Используем разные части хэша при каждом вызове
-  const seed = crypto.randomBytes(16);
-  const hash = crypto.createHash("sha256").update(seed).digest("hex");
-
-  // Берём разные 8 символов хэша
-  const sliceStart = (lastHashIndex * 8) % hash.length;
-  const sliceEnd = sliceStart + 8;
-
-  const hashSegment = hash.slice(sliceStart, sliceEnd);
-  const index = parseInt(hashSegment, 16) % list.length;
-
-  // Обновляем индекс для следующего сегмента
-  lastHashIndex = (lastHashIndex + 1) % 10;
-
-  return list[index] || "Не найдено";
+// Функция для получения случайного элемента
+function getItemByIndex(list, index) {
+  return list[index % list.length] || "Не найдено";
 }
 
 // Создаём бота
@@ -44,16 +41,19 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // Команда /start
 bot.start((ctx) => {
-  ctx.reply("Привет! Напиши @XogsmidBot, чтобы открыть меню с заклинаниями и зельями.");
+  ctx.reply("Привет! Напиши @XogsmidBot, чтобы получить случайное заклинание или зелье.");
 });
 
 // Обработчик inline-запроса
-bot.inlineQuery(/.*/, (ctx) => {
+bot.inlineQuery(/.*/, async (ctx) => {
   const spells = readList(spellsPath);
   const potions = readList(potionsPath);
 
-  const randomSpell = getRandomItem(spells);
-  const randomPotion = getRandomItem(potions);
+  const spellIndex = await getRandomIndex("https://artem-web-hue.github.io/Lichess/bot-via-1.js");
+  const potionIndex = await getRandomIndex("https://artem-web-hue.github.io/Lichess/bot-via-2.js");
+
+  const spell = getItemByIndex(spells, spellIndex);
+  const potion = getItemByIndex(potions, potionIndex);
 
   const results = [
     {
@@ -61,7 +61,7 @@ bot.inlineQuery(/.*/, (ctx) => {
       id: "spell",
       title: "Случайное заклинание",
       input_message_content: {
-        message_text: `🪄 ${randomSpell}`,
+        message_text: `🪄 ${spell}`,
       },
     },
     {
@@ -69,7 +69,7 @@ bot.inlineQuery(/.*/, (ctx) => {
       id: "potion",
       title: "Случайное зелье",
       input_message_content: {
-        message_text: `🧪 ${randomPotion}`,
+        message_text: `🧪 ${potion}`,
       },
     },
   ];
@@ -78,7 +78,7 @@ bot.inlineQuery(/.*/, (ctx) => {
 });
 
 // Запуск бота
-const PORT = parseInt(process.env.PORT) || 10000;
+const PORT = process.env.PORT || 10000;
 const DOMAIN = process.env.RENDER_EXTERNAL_URL || "https://xogsmidbot.onrender.com ";
 
 bot.launch({
