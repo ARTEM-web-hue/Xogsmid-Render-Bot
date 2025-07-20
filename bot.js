@@ -6,10 +6,6 @@ const path = require("path");
 const spellsPath = path.resolve(__dirname, "spells.txt");
 const potionsPath = path.resolve(__dirname, "potions.txt");
 
-// Переменные для хранения последнего значения (глобальные, но защищённые)
-let lastSpell = null;
-let lastPotion = null;
-
 // Функция для безопасного чтения файла
 function readList(filePath) {
   try {
@@ -33,18 +29,8 @@ function readList(filePath) {
   }
 }
 
-// Функция для уникального случайного выбора
-function getRandomUnique(list) {
-  const maxAttempts = 10;
-
-  for (let i = 0; i < maxAttempts; i++) {
-    const randomItem = list[Math.floor(Math.random() * list.length)];
-    if (randomItem !== lastSpell && randomItem !== lastPotion) {
-      return randomItem;
-    }
-  }
-
-  console.warn("⚠️ Все попытки не дали уникального значения. Возвращаем любое.");
+// Функция для случайного выбора
+function getRandomItem(list) {
   return list[Math.floor(Math.random() * list.length)] || "Не найдено";
 }
 
@@ -53,61 +39,39 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // Команда /start
 bot.start((ctx) => {
-  try {
-    ctx.reply("Привет! Напиши @XogsmidBot, чтобы открыть меню с заклинаниями и зельями.");
-  } catch (e) {
-    console.error("❌ Ошибка команды /start:", e.message);
-  }
+  ctx.reply("Привет! Напиши @XogsmidBot, чтобы открыть меню с заклинаниями и зельями.");
 });
 
 // Обработчик inline-запроса
 bot.inlineQuery(/.*/, (ctx) => {
-  try {
-    // Читаем файлы при каждом запросе
-    const spells = readList(spellsPath);
-    const potions = readList(potionsPath);
+  // Читаем файлы при каждом запросе
+  const spells = readList(spellsPath);
+  const potions = readList(potionsPath);
 
-    // Получаем случайные значения, не повторяющиеся подряд
-    const randomSpell = getRandomUnique(spells);
-    const randomPotion = getRandomUnique(potions);
+  // Получаем случайные значения
+  const randomSpell = getRandomItem(spells);
+  const randomPotion = getRandomItem(potions);
 
-    // Обновляем последнее значение
-    lastSpell = randomSpell;
-    lastPotion = randomPotion;
-
-    const results = [
-      {
-        type: "article",
-        id: "spell",
-        title: "Случайное заклинание",
-        input_message_content: {
-          message_text: `🪄 ${randomSpell}`,
-        },
+  const results = [
+    {
+      type: "article",
+      id: "spell",
+      title: "Случайное заклинание",
+      input_message_content: {
+        message_text: `🪄 ${randomSpell}`,
       },
-      {
-        type: "article",
-        id: "potion",
-        title: "Случайное зелье",
-        input_message_content: {
-          message_text: `🧪 ${randomPotion}`,
-        },
+    },
+    {
+      type: "article",
+      id: "potion",
+      title: "Случайное зелье",
+      input_message_content: {
+        message_text: `🧪 ${randomPotion}`,
       },
-    ];
+    },
+  ];
 
-    ctx.answerInlineQuery(results);
-  } catch (e) {
-    console.error("❌ Ошибка в inlineQuery:", e.message);
-    ctx.answerInlineQuery([
-      {
-        type: "article",
-        id: "error",
-        title: "Ошибка",
-        input_message_content: {
-          message_text: "⚠️ Не удалось загрузить данные.",
-        },
-      },
-    ]);
-  }
+  ctx.answerInlineQuery(results);
 });
 
 // Запуск бота
