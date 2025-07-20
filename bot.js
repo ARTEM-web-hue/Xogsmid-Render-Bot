@@ -1,23 +1,16 @@
 const { Telegraf } = require("telegraf");
 const fs = require("fs");
 
-// Загружаем списки (один раз при старте)
-let spells = [];
-let potions = [];
-
-try {
-  spells = fs.readFileSync("spells.txt", "utf-8").split("\n").filter(Boolean);
-  potions = fs.readFileSync("potions.txt", "utf-8").split("\n").filter(Boolean);
-} catch (e) {
-  console.error("Ошибка чтения файлов:", e.message);
-}
+// Загружаем списки
+let spells = fs.readFileSync("spells.txt", "utf-8").split("\n").filter(Boolean);
+let potions = fs.readFileSync("potions.txt", "utf-8").split("\n").filter(Boolean);
 
 // Переменные для хранения последнего результата
 let lastSpell = null;
 let lastPotion = null;
 
-// Функция для выбора случайного элемента, отличного от последнего
-function getRandomUnique(list, last, setLastCallback) {
+// Функция для уникального случайного выбора
+function getRandomUnique(list, last) {
   let randomItem;
   let attempts = 0;
   const maxAttempts = 10;
@@ -27,7 +20,6 @@ function getRandomUnique(list, last, setLastCallback) {
     attempts++;
   } while (randomItem === last && attempts < maxAttempts);
 
-  setLastCallback(randomItem);
   return randomItem;
 }
 
@@ -40,17 +32,21 @@ bot.start((ctx) => {
 
 // Обработчик inline-запроса
 bot.inlineQuery(/.*/, (ctx) => {
+  // Получаем случайные значения
+  const randomSpell = getRandomUnique(spells, lastSpell);
+  const randomPotion = getRandomUnique(potions, lastPotion);
+
+  // Обновляем "последнее значение"
+  lastSpell = randomSpell;
+  lastPotion = randomPotion;
+
   const results = [
     {
       type: "article",
       id: "spell",
       title: "Случайное заклинание",
       input_message_content: {
-        message_text: `🪄 ${getRandomUnique(
-          spells,
-          lastSpell,
-          (item) => (lastSpell = item)
-        )}`,
+        message_text: `🪄 ${randomSpell}`,
       },
     },
     {
@@ -58,11 +54,7 @@ bot.inlineQuery(/.*/, (ctx) => {
       id: "potion",
       title: "Случайное зелье",
       input_message_content: {
-        message_text: `🧪 ${getRandomUnique(
-          potions,
-          lastPotion,
-          (item) => (lastPotion = item)
-        )}`,
+        message_text: `🧪 ${randomPotion}`,
       },
     },
   ];
