@@ -1,3 +1,4 @@
+const fetch = require("node-fetch");
 const { Telegraf } = require("telegraf");
 const fs = require("fs");
 const path = require("path");
@@ -17,14 +18,12 @@ function readList(filePath) {
     return ["Не загружено"];
   }
 }
-
 async function getRandomIndex(url) {
   try {
-    const response = await Bun.fetch(url);
+    const response = await fetch(url);
     const text = await response.text();
     const index = parseInt(text.trim(), 10);
-    if (isNaN(index)) throw new Error("❌ Получено не число");
-    return index;
+    return isNaN(index) ? 0 : index;
   } catch (e) {
     console.error("❌ Ошибка получения случайного числа:", e.message);
     return 0;
