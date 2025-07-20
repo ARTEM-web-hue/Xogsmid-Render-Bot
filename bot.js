@@ -6,6 +6,10 @@ const path = require("path");
 const spellsPath = path.resolve(__dirname, "spells.txt");
 const potionsPath = path.resolve(__dirname, "potions.txt");
 
+// Переменные для хранения последнего значения
+let lastSpell = null;
+let lastPotion = null;
+
 // Функция для чтения файла
 function readList(filePath) {
   try {
@@ -43,9 +47,13 @@ bot.inlineQuery(/.*/, (ctx) => {
   const spells = readList(spellsPath);
   const potions = readList(potionsPath);
 
-  // Получаем случайные значения
-  const randomSpell = getRandomUnique(spells, null);
-  const randomPotion = getRandomUnique(potions, null);
+  // Получаем случайные значения, не повторяющиеся подряд
+  const randomSpell = getRandomUnique(spells, lastSpell);
+  const randomPotion = getRandomUnique(potions, lastPotion);
+
+  // Обновляем "последнее значение"
+  lastSpell = randomSpell;
+  lastPotion = randomPotion;
 
   const results = [
     {
