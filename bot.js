@@ -1,7 +1,4 @@
 const { Telegraf } = require("telegraf");
-const { session } = require("telegraf");
-const { LocalSession } = require("telegraf-session-local");
-
 const fs = require("fs");
 const path = require("path");
 
@@ -9,12 +6,9 @@ const path = require("path");
 const spellsPath = path.resolve(__dirname, "spells.txt");
 const potionsPath = path.resolve(__dirname, "potions.txt");
 
-// Инициализация сессии
-const localSession = new LocalSession();
-const bot = new Telegraf(process.env.BOT_TOKEN);
-
-bot.use(session());
-bot.use(localSession.middleware());
+// Переменные для хранения последнего значения (глобальные, но защищённые)
+let lastSpell = null;
+let lastPotion = null;
 
 // Функция для безопасного чтения файла
 function readList(filePath) {
@@ -40,12 +34,12 @@ function readList(filePath) {
 }
 
 // Функция для уникального случайного выбора
-function getRandomUnique(list, last) {
+function getRandomUnique(list) {
   const maxAttempts = 10;
 
   for (let i = 0; i < maxAttempts; i++) {
     const randomItem = list[Math.floor(Math.random() * list.length)];
-    if (randomItem !== last) {
+    if (randomItem !== lastSpell && randomItem !== lastPotion) {
       return randomItem;
     }
   }
@@ -53,6 +47,9 @@ function getRandomUnique(list, last) {
   console.warn("⚠️ Все попытки не дали уникального значения. Возвращаем любое.");
   return list[Math.floor(Math.random() * list.length)] || "Не найдено";
 }
+
+// Создаём бота
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // Команда /start
 bot.start((ctx) => {
@@ -66,25 +63,17 @@ bot.start((ctx) => {
 // Обработчик inline-запроса
 bot.inlineQuery(/.*/, (ctx) => {
   try {
-    const user = ctx.from.id;
-    const state = ctx.session;
-
-    // Инициализируем сессию пользователя
-    if (!state[user]) {
-      state[user] = {};
-    }
-
     // Читаем файлы при каждом запросе
     const spells = readList(spellsPath);
     const potions = readList(potionsPath);
 
     // Получаем случайные значения, не повторяющиеся подряд
-    const randomSpell = getRandomUnique(spells, state[user].lastSpell);
-    const randomPotion = getRandomUnique(potions, state[user].lastPotion);
+    const randomSpell = getRandomUnique(spells);
+    const randomPotion = getRandomUnique(potions);
 
-    // Сохраняем последние значения в сессии пользователя
-    state[user].lastSpell = randomSpell;
-    state[user].lastPotion = randomPotion;
+    // Обновляем последнее значение
+    lastSpell = randomSpell;
+    lastPotion = randomPotion;
 
     const results = [
       {
