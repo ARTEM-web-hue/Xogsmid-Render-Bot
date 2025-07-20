@@ -42,7 +42,7 @@ bot.start((ctx) => {
   ctx.reply("Привет! Напиши @XogsmidBot, чтобы открыть меню с заклинаниями и зельями.");
 });
 
-// Обработчик inline-запроса — читаем файлы каждый раз
+// Обработчик inline-запроса
 bot.inlineQuery(/.*/, (ctx) => {
   const spells = readList(spellsPath);
   const potions = readList(potionsPath);
