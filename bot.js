@@ -62,7 +62,7 @@ bot.inlineQuery(/.*/, (ctx) => {
       id: "spell",
       title: "Случайное заклинание",
       input_message_content: {
-        message_text: `🪄 getRandomItem(spells, spellsPath)`,
+        message_text: `🪄 ${getRandomItem(spells, spellsPath)}`,
       },
     },
     {
@@ -70,7 +70,7 @@ bot.inlineQuery(/.*/, (ctx) => {
       id: "potion",
       title: "Случайное зелье",
       input_message_content: {
-        message_text: `🧪 getRandomItem(potions, potionsPath)`,
+        message_text: `🧪 ${getRandomItem(potions, potionsPath)}`,
       },
     },
   ];
