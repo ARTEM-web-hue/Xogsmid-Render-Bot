@@ -19,12 +19,23 @@ function readList(filePath) {
   }
 }
 
-// Функция для случайного элемента — с уникальным seed
+let lastHashIndex = 0; // Счетчик для разных сегментов хэша
+
 function getRandomItem(list) {
-  // Используем разные источники энтропии при каждом запросе
-  const seed = crypto.randomBytes(16); // 16 байт случайности
+  // Используем разные части хэша при каждом вызове
+  const seed = crypto.randomBytes(16);
   const hash = crypto.createHash("sha256").update(seed).digest("hex");
-  const index = parseInt(hash.slice(0, 8), 16) % list.length;
+
+  // Берём разные 8 символов хэша
+  const sliceStart = (lastHashIndex * 8) % hash.length;
+  const sliceEnd = sliceStart + 8;
+
+  const hashSegment = hash.slice(sliceStart, sliceEnd);
+  const index = parseInt(hashSegment, 16) % list.length;
+
+  // Обновляем индекс для следующего сегмента
+  lastHashIndex = (lastHashIndex + 1) % 10;
+
   return list[index] || "Не найдено";
 }
 
