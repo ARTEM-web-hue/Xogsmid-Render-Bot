@@ -1,4 +1,4 @@
-const fetch = require("node-fetch");
+console.log("🔍 Глобальный fetch доступен:", typeof fetch === "function");
 const { Telegraf } = require("telegraf");
 const fs = require("fs");
 const path = require("path");
@@ -29,7 +29,6 @@ async function getRandomIndex(url) {
     return 0;
   }
 }
-
 // Функция для получения случайного элемента
 function getItemByIndex(list, index) {
   return list[index % list.length] || "Не найдено";
