@@ -6,14 +6,18 @@ const crypto = require("crypto");
 // Пути к файлам
 const spellsPath = path.resolve(__dirname, "spells.txt");
 const potionsPath = path.resolve(__dirname, "potions.txt");
-
-// Функция для безопасного чтения файла
+// чтение
 function readList(filePath) {
   try {
-    if (!fs.existsSync(filePath)) {
-      console.warn(`⚠️ Файл ${filePath} не найден.`);
-      return ["Не загружено"];
-    }
+    const data = fs.readFileSync(filePath, "utf-8");
+    // Разбиваем по любому переводу строки
+    const lines = data.split(/[\r\n]+/).filter(Boolean);
+    console.log("🔢 Длина списка:", lines.length);
+    return lines;
+  } catch (e) {
+    return ["Не загружено"];
+  }
+}
 
     const data = fs.readFileSync(filePath, "utf-8");
     const lines = data.split("\n").filter(Boolean);
