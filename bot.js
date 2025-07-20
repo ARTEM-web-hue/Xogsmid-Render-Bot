@@ -29,9 +29,12 @@ function readList(filePath) {
   }
 }
 
-// Функция для случайного выбора
+// Функция для случайного выбора с дополнительной энтропией
 function getRandomItem(list) {
-  return list[Math.floor(Math.random() * list.length)] || "Не найдено";
+  // Добавляем текущее время и Math.random() для улучшения случайности
+  const seed = Date.now() + Math.random();
+  const index = Math.floor(seed % list.length);
+  return list[index] || "Не найдено";
 }
 
 // Создаём бота
