@@ -12,8 +12,7 @@ bot.start((ctx) => {
 const PORT = process.env.PORT || 10000;
 
 // Укажи здесь URL, который выдаст Rendeer, например:
-const DOMAIN = process.env.DOMAIN || `https://your-bot.onrendeer.dev `;
-
+const DOMAIN = process.env.RENDER_EXTERNAL_URL || `https://your-bot.onrendeer.dev `;
 // Запускаем бота с вебхуком
 bot.launch({
   webhook: {
